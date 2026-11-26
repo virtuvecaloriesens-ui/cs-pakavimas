@@ -197,9 +197,12 @@ const LS = {
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
 };
 const qs = new URLSearchParams(location.search);
-if (qs.get('api')) LS.set('pak_api', qs.get('api'));
-if (qs.get('key')) LS.set('pak_key', qs.get('key'));
-const DEMO = qs.get('demo') === '1' || (!LS.get('pak_api') && !qs.get('api'));
+// parametrus ieškome visame adrese – net jei nuoroda sugadinta (pvz. „?demo=1/?api=…“)
+const urlParam = n => { const m = new RegExp('[?&/]' + n + '=([^&#?]+)').exec(location.href); return m ? decodeURIComponent(m[1]) : null; };
+const P_API = urlParam('api'), P_KEY = urlParam('key');
+if (P_API) LS.set('pak_api', P_API);
+if (P_KEY) LS.set('pak_key', P_KEY);
+const DEMO = qs.get('demo') === '1' || !LS.get('pak_api') || !LS.get('pak_key');
 // Nuorodos parametrų netriname: iPhone ikona pradžios ekrane turi atskirą atmintį, todėl raktas turi likti nuorodoje.
 
 const CAM_GAP = 900;         // ms – kamera tą patį lipduką įskaito dar kartą tik jam dingus iš kadro bent tiek laiko
