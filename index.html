@@ -33,7 +33,8 @@
   #camWrap { background: #000; position: relative; }
   #cam { width: 100%; max-width: 520px; margin: 0 auto; }
   #cam video { width: 100% !important; max-height: 34vh; object-fit: cover; display: block; }
-  #camWrap .camNote { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; text-shadow: 0 1px 3px #000; }
+  #camWrap .camNote { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; color: #fff; font-size: 15px; font-weight: 700; text-shadow: 0 1px 3px #000; }
+  #camWrap.read { outline: 6px solid #2EE07A; outline-offset: -6px; }
 
   /* Pradžios ekranas */
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -140,7 +141,7 @@
   <button class="hbtn" id="bWho">👤 <span id="who">–</span></button>
 </header>
 
-<div id="camWrap" class="hidden"><div id="cam"></div><div class="camNote">Laikykite QR kodą rėmelyje</div></div>
+<div id="camWrap" class="hidden"><div id="cam"></div><div class="camNote" id="camNote">Laikykite QR kodą rėmelyje</div></div>
 
 <main>
   <!-- PRADŽIA -->
@@ -337,6 +338,7 @@ function renderOrder(flashKey) {
 
 function setMsg(where, cls, html) {
   $(where).innerHTML = html ? `<div class="msg ${cls}">${html}</div>` : '';
+  if (html) $(where).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function orderBanner(o) {
@@ -377,10 +379,11 @@ function parseCode(raw) {
 }
 
 function handleCode(raw, source) {
-  if (!DATA) return;
   const now = Date.now();
   const code = normCode(raw);
   if (!code) return;
+  if (source === 'cam') camShowRead(code);
+  if (!DATA) { err(); toast('Orderiai neįkelti – patikrinkite ryšį ir spauskite ⟳'); return; }
   if (source === 'cam') {
     // kamera tą patį kodą praneša ~12 kartų per sekundę, kol jis kadre
     const same = code === camSeen.code && now - camSeen.at < CAM_GAP;
@@ -539,15 +542,44 @@ async function camStart() {
   try {
     if (!window.Html5Qrcode) await loadScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
     $('camWrap').classList.remove('hidden');
-    QR = new Html5Qrcode('cam', { verbose: false, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] });
-    await QR.start({ facingMode: 'environment' }, { fps: 12, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.7); return { width: s, height: s }; } },
-      txt => handleCode(txt, 'cam'), () => { });
+    $('camNote').textContent = 'Laikykite QR kodą rėmelyje, 10–20 cm atstumu';
+    QR = new Html5Qrcode('cam', {
+      verbose: false,
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      // Android Chrome turi greitą įmontuotą QR skaitytuvą – naudojame jį, jei yra
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+    });
+    const cfg = {
+      fps: 15,
+      // didesnis rėmelis: maži lipdukų QR skaitomi ir iš arčiau
+      qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.85); return { width: s, height: s }; },
+      videoConstraints: {
+        facingMode: 'environment',
+        width: { ideal: 1280 }, height: { ideal: 720 },
+        advanced: [{ focusMode: 'continuous' }],
+      },
+    };
+    try {
+      await QR.start({ facingMode: 'environment' }, cfg, txt => handleCode(txt, 'cam'), () => { });
+    } catch (e1) {
+      // kai kurie telefonai nepriima papildomų nustatymų – bandome paprasčiau
+      delete cfg.videoConstraints;
+      await QR.start({ facingMode: 'environment' }, cfg, txt => handleCode(txt, 'cam'), () => { });
+    }
     $('bCam').classList.add('on'); LS.set('pak_cam', true);
   } catch (e) {
     $('camWrap').classList.add('hidden');
     toast('Kameros įjungti nepavyko: ' + (e && e.message || e), 6000);
     LS.set('pak_cam', false);
   }
+}
+let camNoteT = null;
+function camShowRead(code) {
+  const n = $('camNote');
+  n.textContent = '✔ Nuskaityta: ' + code;
+  $('camWrap').classList.add('read');
+  clearTimeout(camNoteT);
+  camNoteT = setTimeout(() => { $('camWrap').classList.remove('read'); n.textContent = 'Laikykite QR kodą rėmelyje, 10–20 cm atstumu'; }, 1200);
 }
 async function camStop() {
   try { if (QR) await QR.stop(); } catch (e) { }
