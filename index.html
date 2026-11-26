@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1E2350">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CS Pakavimas</title>
+<style>
+  :root {
+    --navy: #1E2350; --yellow: #F5B800; --green: #12A150; --green-bg: #E3F7EA;
+    --red: #D92D20; --red-bg: #FDE7E5; --amber: #E08A00; --amber-bg: #FFF4DB;
+    --grey: #8A8FA3; --line: #E4E6EE; --bg: #F4F5F9; --text: #151829;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button { font: inherit; cursor: pointer; }
+  .hidden { display: none !important; }
+
+  /* Viršutinė juosta */
+  header { position: sticky; top: 0; z-index: 20; background: var(--navy); color: #fff;
+    padding: 8px 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  header .brand { font-weight: 800; letter-spacing: .5px; margin-right: auto; display: flex; align-items: center; gap: 6px; }
+  header .brand i { display: inline-block; width: 6px; height: 18px; background: var(--yellow); margin-left: 2px; }
+  header input[type=date] { font: inherit; border: 0; border-radius: 8px; padding: 6px 8px; }
+  .hbtn { background: rgba(255,255,255,.12); color: #fff; border: 0; border-radius: 8px; padding: 7px 10px; white-space: nowrap; }
+  .hbtn.on { background: var(--yellow); color: var(--navy); font-weight: 700; }
+
+  main { padding: 12px; max-width: 900px; margin: 0 auto; }
+
+  /* Kamera */
+  #camWrap { background: #000; position: relative; }
+  #cam { width: 100%; max-width: 520px; margin: 0 auto; }
+  #cam video { width: 100% !important; max-height: 34vh; object-fit: cover; display: block; }
+  #camWrap .camNote { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; text-shadow: 0 1px 3px #000; }
+
+  /* Pradžios ekranas */
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: #fff; border-radius: 12px; padding: 10px 12px; border: 1px solid var(--line); }
+  .stat b { font-size: 24px; display: block; }
+  .stat span { color: var(--grey); font-size: 13px; }
+  .search { width: 100%; font: inherit; font-size: 18px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--line); background: #fff; margin-bottom: 6px; }
+  .search:focus { outline: none; border-color: var(--navy); }
+  .hint { color: var(--grey); font-size: 13px; margin: 0 2px 12px; }
+  .olist { display: grid; gap: 8px; }
+  .ocard { background: #fff; border: 1px solid var(--line); border-left: 6px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; text-align: left; width: 100%; color: inherit; }
+  .ocard .nm { font-weight: 700; font-size: 17px; }
+  .ocard .sub { color: var(--grey); font-size: 13px; }
+  .ocard .right { margin-left: auto; text-align: right; font-weight: 700; white-space: nowrap; }
+  .ocard.started { border-left-color: var(--amber); background: var(--amber-bg); }
+  .ocard.packed { border-left-color: var(--green); background: var(--green-bg); }
+  .ocard.gone { border-left-color: var(--grey); opacity: .6; }
+  .section-t { margin: 16px 2px 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--grey); font-weight: 700; }
+
+  /* Orderio ekranas */
+  .ohead { background: #fff; border-radius: 14px; padding: 12px 14px; border: 1px solid var(--line); margin-bottom: 10px; }
+  .ohead .row1 { display: flex; align-items: center; gap: 10px; }
+  .ohead .back { background: var(--bg); border: 0; border-radius: 10px; padding: 8px 12px; font-size: 18px; }
+  .ohead .nm { font-size: 22px; font-weight: 800; }
+  .ohead .sub { color: var(--grey); font-size: 14px; }
+  .ohead .cnt { margin-left: auto; font-size: 26px; font-weight: 800; white-space: nowrap; }
+  .bar { height: 10px; background: var(--line); border-radius: 6px; overflow: hidden; margin-top: 10px; }
+  .bar > div { height: 100%; background: var(--green); transition: width .2s; }
+  .msg { border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-weight: 700; font-size: 18px; }
+  .msg.ok { background: var(--green-bg); color: #0B6B35; }
+  .msg.err { background: var(--red); color: #fff; font-size: 20px; }
+  .msg.warn { background: var(--amber-bg); color: #7A4A00; }
+  .msg.info { background: #E8EAF6; color: var(--navy); }
+  .items { display: grid; gap: 6px; }
+  .item { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: flex; align-items: center; gap: 10px; transition: background .25s; }
+  .item img, .item .noimg { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--bg); }
+  .item .nm { font-weight: 600; }
+  .item .id { color: var(--grey); font-size: 12px; }
+  .item .q { margin-left: auto; font-size: 24px; font-weight: 800; white-space: nowrap; }
+  .item .q small { font-size: 16px; color: var(--grey); font-weight: 600; }
+  .item .adj { display: flex; flex-direction: column; gap: 4px; }
+  .item .adj button { width: 34px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); font-weight: 700; }
+  .item.done { background: var(--green-bg); border-color: #BDE8CC; }
+  .item.done .q { color: var(--green); }
+  .item.flash { background: #B9F0CD !important; }
+  .item.noid { border-style: dashed; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; background: var(--navy); color: #fff; }
+  .btn.light { background: #fff; color: var(--navy); border: 1px solid var(--line); }
+  .btn.red { background: var(--red); }
+
+  /* Viso ekrano signalai */
+  #flash { position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0; transition: opacity .15s; }
+  #flash.red { background: rgba(217,45,32,.55); opacity: 1; }
+  #done { position: fixed; inset: 0; z-index: 60; background: var(--green); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+  #done .big { font-size: clamp(40px, 11vw, 96px); font-weight: 900; line-height: 1.05; }
+  #done .who { font-size: 26px; margin-top: 14px; font-weight: 700; }
+  #done .st { margin-top: 18px; font-size: 16px; opacity: .95; min-height: 22px; }
+  #done button { margin-top: 28px; background: #fff; color: var(--green); font-size: 20px; padding: 14px 28px; border-radius: 14px; border: 0; font-weight: 800; }
+
+  /* Modalai */
+  .modal { position: fixed; inset: 0; z-index: 70; background: rgba(21,24,41,.55); display: flex; align-items: flex-end; justify-content: center; }
+  .modal .box { background: #fff; width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; padding: 16px; max-height: 85vh; overflow: auto; }
+  .modal h3 { margin: 0 0 10px; }
+  .modal input[type=text] { width: 100%; font: inherit; font-size: 18px; padding: 12px; border-radius: 10px; border: 2px solid var(--line); }
+
+  #loading { position: fixed; inset: 0; z-index: 80; background: rgba(244,245,249,.85); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; font-weight: 700; color: var(--navy); }
+  .spin { width: 42px; height: 42px; border: 5px solid var(--line); border-top-color: var(--navy); border-radius: 50%; animation: sp 0.9s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--navy); color: #fff; padding: 10px 16px; border-radius: 10px; z-index: 90; font-size: 14px; max-width: 92vw; }
+
+  /* Spausdinimas */
+  #print { display: none; }
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff; }
+    body > *:not(#print) { display: none !important; }
+    #print { display: block; }
+    .psheet { page-break-after: always; font-size: 12pt; color: #000; }
+    .psheet:last-child { page-break-after: auto; }
+    .ptop { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6mm; margin-bottom: 4mm; }
+    .ptop .nm { font-size: 24pt; font-weight: 800; }
+    .ptop .bid { font-size: 18pt; font-weight: 800; margin-top: 2mm; }
+    .ptop .meta { font-size: 11pt; margin-top: 2mm; }
+    .ptop .qr svg { width: 34mm; height: 34mm; display: block; }
+    .ptop .qr div { text-align: center; font-size: 9pt; font-weight: 700; }
+    .ptab { width: 100%; border-collapse: collapse; }
+    .ptab td, .ptab th { border-bottom: 1px solid #999; padding: 1.6mm 2mm; text-align: left; vertical-align: middle; }
+    .ptab td.q { font-weight: 800; font-size: 14pt; width: 14mm; text-align: center; }
+    .ptab td.ck { width: 10mm; }
+    .ptab td.ck span { display: inline-block; width: 5mm; height: 5mm; border: 1.5px solid #000; }
+    .pfoot { margin-top: 4mm; font-size: 10pt; display: flex; justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">CS PAKAVIMAS<i></i><i></i><i></i></div>
+  <input type="date" id="date" title="Pristatymo data">
+  <button class="hbtn" id="bRefresh" title="Atnaujinti iš admin">⟳</button>
+  <button class="hbtn" id="bCam">📷 Kamera</button>
+  <button class="hbtn" id="bPrint">🖨 Lapai</button>
+  <button class="hbtn" id="bWho">👤 <span id="who">–</span></button>
+</header>
+
+<div id="camWrap" class="hidden"><div id="cam"></div><div class="camNote">Laikykite QR kodą rėmelyje</div></div>
+
+<main>
+  <!-- PRADŽIA -->
+  <section id="home">
+    <div class="stats">
+      <div class="stat"><b id="sPacked">0/0</b><span>dėžių supakuota</span></div>
+      <div class="stat"><b id="sPortions">0</b><span>porcijų liko</span></div>
+    </div>
+    <input class="search" id="search" type="search" placeholder="Pavardė arba Bundle ID…" autocomplete="off">
+    <div class="hint">Nuskenuokite lapo QR kodą, kad atidarytumėte orderį. Nuskenuotas patiekalas parodys, kam jo dar trūksta.</div>
+    <div id="msgHome"></div>
+    <div id="olist"></div>
+    <div class="hint" id="updated" style="margin-top:14px"></div>
+  </section>
+
+  <!-- ORDERIS -->
+  <section id="order" class="hidden">
+    <div class="ohead">
+      <div class="row1">
+        <button class="back" id="bBack">←</button>
+        <div>
+          <div class="nm" id="oName"></div>
+          <div class="sub" id="oSub"></div>
+        </div>
+        <div class="cnt" id="oCnt"></div>
+      </div>
+      <div class="bar"><div id="oBar"></div></div>
+    </div>
+    <div id="oMsg"></div>
+    <div class="items" id="oItems"></div>
+    <div class="actions" id="oActions"></div>
+  </section>
+</main>
+
+<div id="flash"></div>
+<div id="done" class="hidden">
+  <div class="big">✔ UŽKLIJUOK<br>DĖŽĘ</div>
+  <div class="who" id="doneWho"></div>
+  <div class="st" id="doneSt"></div>
+  <button id="bDoneNext">Kitas orderis</button>
+</div>
+<div id="loading" class="hidden"><div class="spin"></div><div id="loadingTxt">Kraunama…</div></div>
+<div id="print"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+'use strict';
+// ================== NUSTATYMAI ==================
+const LS = {
+  get: (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
+};
+const qs = new URLSearchParams(location.search);
+if (qs.get('api')) LS.set('pak_api', qs.get('api'));
+if (qs.get('key')) LS.set('pak_key', qs.get('key'));
+const DEMO = qs.get('demo') === '1' || (!LS.get('pak_api') && !qs.get('api'));
+// Nuorodos parametrų netriname: iPhone ikona pradžios ekrane turi atskirą atmintį, todėl raktas turi likti nuorodoje.
+
+const CAM_GAP = 900;         // ms – kamera tą patį lipduką įskaito dar kartą tik jam dingus iš kadro bent tiek laiko
+const HID_COOLDOWN = 350;    // ms – rankinis skeneris
+const AUTO_REFRESH = 120000; // ms – sąrašo atnaujinimas fone
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let DATA = null;          // {date, orders, meals, updated}
+let CUR = null;           // atidaryto orderio id
+let lastCode = '', lastAt = 0;
+let camSeen = { code: '', at: 0 };
+let doneShownFor = null;
+
+// ================== API ==================
+async function api(params) {
+  if (DEMO) return demoApi(params);
+  const u = new URL(LS.get('pak_api'));
+  u.searchParams.set('key', LS.get('pak_key'));
+  Object.entries(params).forEach(([k, v]) => { if (v != null && v !== '') u.searchParams.set(k, v); });
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 60000);
+  try {
+    const r = await fetch(u.toString(), { signal: ctl.signal });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'Serverio klaida');
+    return j;
+  } finally { clearTimeout(t); }
+}
+
+async function loadDay(date, opts = {}) {
+  if (!opts.silent) showLoading(opts.refresh ? 'Atnaujinama iš admin…' : 'Kraunami orderiai…');
+  try {
+    const j = await api({ action: 'day', date: date || '', refresh: opts.refresh ? '1' : '' });
+    DATA = normalize(j);
+    LS.set('pak_data', DATA);
+    $('date').value = DATA.date;
+    render();
+  } catch (e) {
+    if (!opts.silent) toast('✖ ' + e.message, 6000);
+  } finally {
+    hideLoading();
+  }
+}
+
+function normalize(j) {
+  j.orders.forEach(o => {
+    // sujungiame pasikartojančius patiekalus
+    const map = {};
+    const items = [];
+    o.items.forEach((it, i) => {
+      const k = it.mealId != null ? 'm' + it.mealId : 'n' + i;
+      if (map[k]) { map[k].qty += it.qty; return; }
+      const x = Object.assign({}, it, { key: k });
+      map[k] = x; items.push(x);
+    });
+    o.items = items;
+    o.total = items.reduce((s, i) => s + i.qty, 0);
+  });
+  return j;
+}
+
+// ================== PROGRESAS (telefone) ==================
+function progKey() { return 'pak_prog_' + (DATA ? DATA.date : ''); }
+function getProg(id) { const p = LS.get(progKey(), {}); return p[id] || {}; }
+function setProg(id, obj) { const p = LS.get(progKey(), {}); p[id] = obj; LS.set(progKey(), p); }
+function scanned(o) { const p = getProg(o.id); return o.items.reduce((s, it) => s + Math.min(p[it.key] || 0, it.qty), 0); }
+function isComplete(o) { const p = getProg(o.id); return o.items.every(it => (p[it.key] || 0) >= it.qty); }
+function orderById(id) { return DATA && DATA.orders.find(o => String(o.id) === String(id)); }
+
+// ================== PIEŠIMAS ==================
+function render() {
+  if (!DATA) return;
+  if (CUR != null && orderById(CUR)) renderOrder(); else { CUR = null; renderHome(); }
+}
+
+function renderHome() {
+  $('home').classList.remove('hidden'); $('order').classList.add('hidden');
+  const f = $('search').value.trim().toLowerCase();
+  const os = DATA.orders.filter(o => !f || (o.first + ' ' + o.last).toLowerCase().includes(f) || String(o.id).includes(f));
+  const packed = DATA.orders.filter(o => o.status !== 'paid').length;
+  $('sPacked').textContent = `${packed}/${DATA.orders.length}`;
+  $('sPortions').textContent = DATA.orders.filter(o => o.status === 'paid').reduce((s, o) => s + o.total - scanned(o), 0);
+
+  const groups = { todo: [], packed: [] };
+  os.forEach(o => (o.status === 'paid' ? groups.todo : groups.packed).push(o));
+  const card = o => {
+    const sc = scanned(o);
+    let cls = '', right = `${o.total} porc.`;
+    if (o.status === 'packed') { cls = 'packed'; right = '✔ ' + esc((o.packedBy || '') + (o.packedAt ? ' ' + o.packedAt.slice(11, 16) : '')); }
+    else if (o.status === 'gone') { cls = 'gone'; right = 'nebėra admin'; }
+    else if (sc > 0) { cls = 'started'; right = `${sc} / ${o.total}`; }
+    return `<button class="ocard ${cls}" data-id="${o.id}">
+      <div><div class="nm">${esc(o.first)} ${esc(o.last)}</div>
+      <div class="sub">#${o.id} · ${esc(o.variant)}${o.bundleName ? ' · ' + esc(o.bundleName) : ''}</div></div>
+      <div class="right">${right}</div></button>`;
+  };
+  let h = '';
+  if (!DATA.orders.length) h = `<div class="msg info">${esc(DATA.date)} orderių nėra.</div>`;
+  if (groups.todo.length) h += `<div class="olist">${groups.todo.map(card).join('')}</div>`;
+  if (groups.packed.length) h += `<div class="section-t">Supakuota</div><div class="olist">${groups.packed.map(card).join('')}</div>`;
+  $('olist').innerHTML = h;
+  $('updated').textContent = DATA.updated ? `Duomenys iš admin: ${DATA.updated}` + (DEMO ? ' · DEMO režimas' : '') : '';
+}
+
+function renderOrder(flashKey) {
+  const o = orderById(CUR);
+  $('home').classList.add('hidden'); $('order').classList.remove('hidden');
+  const p = getProg(o.id);
+  const sc = scanned(o);
+  $('oName').textContent = `${o.first} ${o.last}`;
+  $('oSub').textContent = `#${o.id} · ${o.variant}${o.bundleName ? ' · ' + o.bundleName : ''}`;
+  $('oCnt').textContent = `${sc} / ${o.total}`;
+  $('oBar').style.width = (o.total ? sc / o.total * 100 : 0) + '%';
+
+  const rows = o.items.slice().sort((a, b) => {
+    const da = (p[a.key] || 0) >= a.qty, db = (p[b.key] || 0) >= b.qty;
+    return da - db;
+  });
+  $('oItems').innerHTML = rows.map(it => {
+    const c = p[it.key] || 0, done = c >= it.qty;
+    const img = it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'noimg'}))">` : '<div class="noimg"></div>';
+    return `<div class="item ${done ? 'done' : ''} ${it.mealId == null ? 'noid' : ''} ${flashKey === it.key ? 'flash' : ''}" data-key="${it.key}">
+      ${img}
+      <div><div class="nm">${esc(it.name)}</div><div class="id">${it.mealId != null ? 'ID ' + it.mealId : '⚠ QR neatpažįstamas – žymėkite ranka'}</div></div>
+      <div class="q">${c}<small> / ${it.qty}</small></div>
+      <div class="adj"><button data-adj="1" data-key="${it.key}">+</button><button data-adj="-1" data-key="${it.key}">−</button></div>
+    </div>`;
+  }).join('');
+  if (flashKey) setTimeout(() => { const el = document.querySelector('.item.flash'); if (el) el.classList.remove('flash'); }, 350);
+
+  let act = '';
+  if (o.status === 'packed') act += `<button class="btn light" id="bUnpack">↩ Atšaukti „Packed“</button>`;
+  act += `<button class="btn light" id="bReset">Išvalyti skenavimą</button>`;
+  $('oActions').innerHTML = act;
+}
+
+function setMsg(where, cls, html) {
+  $(where).innerHTML = html ? `<div class="msg ${cls}">${html}</div>` : '';
+}
+
+function orderBanner(o) {
+  if (o.status === 'packed') return setMsg('oMsg', 'ok', `✔ Jau supakuota${o.packedBy ? ' (' + esc(o.packedBy) + ', ' + esc(o.packedAt) + ')' : ''}` + (o.adminOk === 'NE' ? ' · ⚠ admin statusas nepakeistas' : ''));
+  if (o.status === 'gone') return setMsg('oMsg', 'warn', 'Šio orderio nebėra admin Packing Schedule (supakuotas ranka arba atšauktas). Galite tikrinti, bet admin statusas nebus keičiamas.');
+  const sum = o.total;
+  if (o.dishes && sum !== o.dishes) return setMsg('oMsg', 'warn', `⚠ Packing list'e ${sum} porc., o admin rodo ${o.dishes}. Patikrinkite.`);
+  setMsg('oMsg', 'info', 'Skenuokite patiekalus');
+}
+
+// ================== NAVIGACIJA ==================
+function openOrder(id) {
+  const o = orderById(id);
+  if (!o) { toast('Orderio #' + id + ' šiai datai nėra'); err(); return false; }
+  CUR = o.id;
+  doneShownFor = null;
+  orderBanner(o);
+  renderOrder();
+  window.scrollTo(0, 0);
+  return true;
+}
+function goHome() { CUR = null; $('search').value = ''; setMsg('msgHome'); renderHome(); }
+
+// ================== SKENAVIMAS ==================
+const LT_DIGITS = { 'ą': '1', 'č': '2', 'ę': '3', 'ė': '4', 'į': '5', 'š': '6', 'ų': '7', 'ū': '8', '„': '9', '“': '0',
+  'Ą': '1', 'Č': '2', 'Ę': '3', 'Ė': '4', 'Į': '5', 'Š': '6', 'Ų': '7', 'Ū': '8' };
+function normCode(raw) {
+  return String(raw || '').trim().split('').map(c => LT_DIGITS[c] || c).join('').toUpperCase();
+}
+function parseCode(raw) {
+  const c = normCode(raw);
+  let m = /^B-?(\d+)$/.exec(c);
+  if (m) return { type: 'order', id: Number(m[1]) };
+  m = /(\d+)\D*$/.exec(c);   // grynas skaičius arba nuoroda, kurios gale ID
+  if (m && /^\d+$/.test(c)) return { type: 'num', id: Number(m[1]) };
+  if (m) return { type: 'meal', id: Number(m[1]) };
+  return null;
+}
+
+function handleCode(raw, source) {
+  if (!DATA) return;
+  const now = Date.now();
+  const code = normCode(raw);
+  if (!code) return;
+  if (source === 'cam') {
+    // kamera tą patį kodą praneša ~12 kartų per sekundę, kol jis kadre
+    const same = code === camSeen.code && now - camSeen.at < CAM_GAP;
+    camSeen = { code, at: now };
+    if (same) return;
+  } else {
+    if (code === lastCode && now - lastAt < HID_COOLDOWN) return;
+    lastCode = code; lastAt = now;
+  }
+  const pc = parseCode(code);
+  if (!pc) { err(); toast('Neatpažintas kodas: ' + code); return; }
+
+  // ekranas „UŽKLIJUOK“ – kitas lapas iškart atidaro kitą orderį
+  if (!$('done').classList.contains('hidden')) {
+    if (pc.type === 'order' || (pc.type === 'num' && orderById(pc.id))) { hideDone(); openOrder(pc.id); beep(); }
+    return;
+  }
+
+  if (CUR == null) {
+    if (pc.type === 'order' || (pc.type === 'num' && orderById(pc.id))) { if (openOrder(pc.id)) beep(); return; }
+    whoNeeds(pc.id);
+    return;
+  }
+  // atidarytas orderis
+  if (pc.type === 'order' || (pc.type === 'num' && orderById(pc.id) && !DATA.meals[pc.id])) {
+    if (pc.id !== CUR) { openOrder(pc.id); beep(); }
+    return;
+  }
+  scanMeal(pc.id);
+}
+
+function scanMeal(mealId) {
+  const o = orderById(CUR);
+  const it = o.items.find(i => i.mealId === mealId);
+  const mealName = (DATA.meals[mealId] && DATA.meals[mealId].name) || ('ID ' + mealId);
+  if (!it) {
+    err();
+    setMsg('oMsg', 'err', `✖ ŠIO PATIEKALO ORDERYJE NĖRA<br><span style="font-weight:600">${esc(mealName)}</span>`);
+    return;
+  }
+  const p = getProg(o.id);
+  const c = p[it.key] || 0;
+  if (c >= it.qty) {
+    err();
+    setMsg('oMsg', 'err', `✖ PER DAUG: ${esc(it.name)}<br><span style="font-weight:600">reikia ${it.qty}, jau įdėta ${c}</span>`);
+    return;
+  }
+  p[it.key] = c + 1;
+  setProg(o.id, p);
+  const left = it.qty - c - 1;
+  setMsg('oMsg', 'ok', `✔ ${esc(it.name)} — ${c + 1}/${it.qty}` + (left ? ` (dar ${left})` : ''));
+  beep();
+  renderOrder(it.key);
+  checkComplete(o);
+}
+
+function adjust(key, d) {
+  const o = orderById(CUR);
+  const it = o.items.find(i => i.key === key);
+  const p = getProg(o.id);
+  const c = p[key] || 0;
+  if (d > 0) {
+    if (c >= it.qty) { err(); return; }
+    if (!confirm(`Pažymėti ranka be skenavimo?\n${it.name}`)) return;
+  }
+  p[key] = Math.max(0, Math.min(it.qty, c + d));
+  setProg(o.id, p);
+  setMsg('oMsg', 'info', d > 0 ? `Pažymėta ranka: ${esc(it.name)}` : `Atimta: ${esc(it.name)}`);
+  renderOrder(key);
+  if (d > 0) checkComplete(o);
+}
+
+function whoNeeds(mealId) {
+  const meal = DATA.meals[mealId];
+  const name = meal ? meal.name : null;
+  const list = DATA.orders.filter(o => o.status === 'paid').map(o => {
+    const it = o.items.find(i => i.mealId === mealId);
+    if (!it) return null;
+    const c = getProg(o.id)[it.key] || 0;
+    return c < it.qty ? { o, miss: it.qty - c, started: scanned(o) > 0 } : null;
+  }).filter(Boolean).sort((a, b) => b.started - a.started);
+  if (!name && !list.length) { err(); setMsg('msgHome', 'err', `Kodas ${mealId}: tokio patiekalo ar orderio šiai datai nėra.`); return; }
+  beep();
+  if (!list.length) { setMsg('msgHome', 'warn', `<b>${esc(name)}</b>: visiems orderiams jau įdėta. Ši porcija lieka.`); return; }
+  setMsg('msgHome', 'info', `Kam trūksta: <b>${esc(name || 'ID ' + mealId)}</b>` +
+    `<div class="olist" style="margin-top:8px">` + list.map(x =>
+      `<button class="ocard ${x.started ? 'started' : ''}" data-id="${x.o.id}"><div><div class="nm">${esc(x.o.first)} ${esc(x.o.last)}</div>` +
+      `<div class="sub">#${x.o.id}${x.started ? ' · pradėta pakuoti' : ''}</div></div><div class="right">trūksta ${x.miss}</div></button>`).join('') + `</div>`);
+}
+
+// ================== UŽBAIGIMAS ==================
+function checkComplete(o) {
+  if (!isComplete(o) || doneShownFor === o.id) return;
+  doneShownFor = o.id;
+  $('doneWho').textContent = `${o.first} ${o.last} · #${o.id}`;
+  $('done').classList.remove('hidden');
+  tada();
+  if (o.status === 'packed') { $('doneSt').textContent = 'Admin\'e jau pažymėta „Packed“.'; return; }
+  if (o.status === 'gone') { $('doneSt').textContent = 'Admin statusas nekeičiamas (orderio nebėra Packing Schedule).'; return; }
+  $('doneSt').textContent = 'Žymima admin\'e „Packed“…';
+  markPacked(o);
+}
+
+async function markPacked(o) {
+  const who = LS.get('pak_who', '');
+  o.status = 'packed'; o.packedBy = who; o.packedAt = nowStr();
+  LS.set('pak_data', DATA);
+  try {
+    const r = await api({ action: 'packed', date: DATA.date, bundle: o.id, by: who });
+    o.adminOk = r.adminOk ? 'TAIP' : 'NE';
+    if (doneShownFor === o.id) $('doneSt').textContent = r.adminOk ? '✔ Admin\'e pažymėta „Packed“' : '⚠ Įrašyta žurnale, bet admin statuso pakeisti nepavyko – pakeiskite ranka.';
+  } catch (e) {
+    queuePush({ action: 'packed', date: DATA.date, bundle: o.id, by: who });
+    if (doneShownFor === o.id) $('doneSt').textContent = '⚠ Nėra ryšio – bus išsiųsta automatiškai vėliau.';
+  }
+  LS.set('pak_data', DATA);
+}
+
+function hideDone() { $('done').classList.add('hidden'); }
+
+// Neišsiųstų veiksmų eilė (jei dingo internetas)
+function queuePush(x) { const q = LS.get('pak_queue', []); q.push(x); LS.set('pak_queue', q); }
+async function queueFlush() {
+  const q = LS.get('pak_queue', []);
+  if (!q.length) return;
+  const rest = [];
+  for (const x of q) { try { await api(x); } catch (e) { rest.push(x); } }
+  LS.set('pak_queue', rest);
+  if (rest.length < q.length) toast(`Išsiųsta ${q.length - rest.length} atidėtų žymėjimų`);
+}
+
+// ================== GARSAI ==================
+let AC = null;
+function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } if (AC && AC.state === 'suspended') AC.resume(); return AC; }
+function tone(f, d, type = 'sine', delay = 0, vol = 0.25) {
+  const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.value = f; g.gain.value = vol;
+  o.connect(g); g.connect(a.destination);
+  const t = a.currentTime + delay;
+  o.start(t); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + d); o.stop(t + d + 0.02);
+}
+function beep() { tone(1320, 0.09, 'square', 0, 0.12); vib(40); }
+function err() {
+  tone(180, 0.18, 'sawtooth', 0, 0.35); tone(180, 0.18, 'sawtooth', 0.24, 0.35); tone(180, 0.3, 'sawtooth', 0.48, 0.35);
+  vib([200, 80, 200, 80, 300]);
+  const f = $('flash'); f.className = 'red'; setTimeout(() => f.className = '', 600);
+}
+function tada() { tone(880, 0.12, 'sine', 0, .3); tone(1175, 0.12, 'sine', .13, .3); tone(1568, 0.35, 'sine', .26, .3); vib([80, 60, 80, 60, 250]); }
+function vib(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { } }
+
+// ================== KAMERA ==================
+let QR = null;
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+async function camStart() {
+  try {
+    if (!window.Html5Qrcode) await loadScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
+    $('camWrap').classList.remove('hidden');
+    QR = new Html5Qrcode('cam', { verbose: false, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] });
+    await QR.start({ facingMode: 'environment' }, { fps: 12, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.7); return { width: s, height: s }; } },
+      txt => handleCode(txt, 'cam'), () => { });
+    $('bCam').classList.add('on'); LS.set('pak_cam', true);
+  } catch (e) {
+    $('camWrap').classList.add('hidden');
+    toast('Kameros įjungti nepavyko: ' + (e && e.message || e), 6000);
+    LS.set('pak_cam', false);
+  }
+}
+async function camStop() {
+  try { if (QR) await QR.stop(); } catch (e) { }
+  QR = null; $('cam').innerHTML = ''; $('camWrap').classList.add('hidden'); $('bCam').classList.remove('on'); LS.set('pak_cam', false);
+}
+
+// ================== RANKINIS SKENERIS (klaviatūra) ==================
+let kbBuf = '', kbAt = 0;
+document.addEventListener('keydown', e => {
+  ac();
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+  const now = Date.now();
+  if (now - kbAt > 300) kbBuf = '';
+  kbAt = now;
+  if (e.key === 'Enter') { if (kbBuf) { handleCode(kbBuf, 'hid'); kbBuf = ''; } e.preventDefault(); return; }
+  if (e.key && e.key.length === 1) kbBuf += e.key;
+});
+
+// ================== SPAUSDINIMAS ==================
+function printSheets() {
+  if (!DATA || !DATA.orders.length) { toast('Nėra orderių'); return; }
+  const onlyTodo = confirm('Spausdinti tik NESUPAKUOTUS orderius?\n\nOK = tik nesupakuotus, Atšaukti = visus');
+  const list = DATA.orders.filter(o => !onlyTodo || o.status === 'paid');
+  $('print').innerHTML = list.map(o => {
+    const q = qrcode(0, 'M'); q.addData('B' + o.id); q.make();
+    const rows = o.items.slice().sort((a, b) => a.name.localeCompare(b.name, 'lt'))
+      .map(it => `<tr><td class="q">${it.qty}</td><td>${esc(it.name)}</td><td class="ck"><span></span></td></tr>`).join('');
+    return `<div class="psheet">
+      <div class="ptop">
+        <div><div class="nm">${esc(o.first)} ${esc(o.last)}</div>
+          <div class="bid">Bundle ID: ${o.id}</div>
+          <div class="meta">${esc(o.bundleName || '')} · ${esc(o.variant)} · ${o.total} porc. · pristatymas ${esc(DATA.date)}</div></div>
+        <div class="qr">${q.createSvgTag({ cellSize: 4, margin: 0, scalable: true })}<div>B${o.id}</div></div>
+      </div>
+      <table class="ptab">${rows}</table>
+      <div class="pfoot"><span>Iš viso: <b>${o.total}</b> porc.</span><span>Pakavo: ____________</span></div>
+    </div>`;
+  }).join('');
+  setTimeout(() => window.print(), 100);
+}
+
+// ================== PAGALBINĖS ==================
+function showLoading(t) { $('loadingTxt').textContent = t || 'Kraunama…'; $('loading').classList.remove('hidden'); }
+function hideLoading() { $('loading').classList.add('hidden'); }
+let toastT = null;
+function toast(t, ms = 3000) {
+  let el = document.querySelector('.toast'); if (!el) { el = document.createElement('div'); el.className = 'toast'; document.body.appendChild(el); }
+  el.textContent = t; el.classList.remove('hidden'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), ms);
+}
+function nowStr() { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; }
+function askWho(force) {
+  let w = LS.get('pak_who', '');
+  if (w && !force) { $('who').textContent = w; return; }
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="box"><h3>Kas pakuoja?</h3><input type="text" id="whoIn" value="${esc(w)}" placeholder="Vardas"><div class="actions"><button class="btn" id="whoOk">Gerai</button></div></div>`;
+  document.body.appendChild(m);
+  const ok = () => { const v = $('whoIn').value.trim(); if (!v) return; LS.set('pak_who', v); $('who').textContent = v; m.remove(); };
+  $('whoOk').onclick = ok; $('whoIn').onkeydown = e => { if (e.key === 'Enter') ok(); };
+  setTimeout(() => $('whoIn').focus(), 50);
+}
+
+// ================== ĮVYKIAI ==================
+document.addEventListener('pointerdown', () => ac(), { once: true });
+$('olist').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) openOrder(b.dataset.id); });
+$('msgHome').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) openOrder(b.dataset.id); });
+$('oItems').addEventListener('click', e => { const b = e.target.closest('[data-adj]'); if (b) adjust(b.dataset.key, Number(b.dataset.adj)); });
+$('oActions').addEventListener('click', async e => {
+  const o = orderById(CUR);
+  if (e.target.id === 'bReset') {
+    if (!confirm('Išvalyti šio orderio skenavimą?')) return;
+    setProg(o.id, {}); doneShownFor = null; orderBanner(o); renderOrder();
+  }
+  if (e.target.id === 'bUnpack') {
+    if (!confirm(`Grąžinti #${o.id} į „Paid“ (atšaukti supakavimą)?`)) return;
+    showLoading('Keičiamas statusas…');
+    try {
+      await api({ action: 'unpack', date: DATA.date, bundle: o.id, by: LS.get('pak_who', '') });
+      o.status = 'paid'; o.packedBy = ''; o.packedAt = ''; setProg(o.id, {}); doneShownFor = null;
+      LS.set('pak_data', DATA); orderBanner(o); renderOrder();
+    } catch (x) { toast('✖ ' + x.message, 6000); }
+    hideLoading();
+  }
+});
+$('bBack').onclick = goHome;
+$('bDoneNext').onclick = () => { hideDone(); goHome(); };
+$('bRefresh').onclick = () => loadDay($('date').value, { refresh: true });
+$('date').onchange = () => { CUR = null; loadDay($('date').value); };
+$('bCam').onclick = () => (QR ? camStop() : camStart());
+$('bPrint').onclick = printSheets;
+$('bWho').onclick = () => askWho(true);
+$('search').addEventListener('input', () => { setMsg('msgHome'); renderHome(); });
+$('search').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const v = $('search').value.trim();
+  const pc = parseCode(v);
+  if (pc && /^(B-?)?\d+$/i.test(normCode(v))) { $('search').value = ''; handleCode(v, 'hid'); $('search').blur(); return; }
+  const f = v.toLowerCase();
+  const m = DATA.orders.filter(o => (o.first + ' ' + o.last).toLowerCase().includes(f));
+  if (m.length === 1) { $('search').blur(); openOrder(m[0].id); }
+});
+setInterval(() => { if (CUR == null && $('done').classList.contains('hidden') && document.visibilityState === 'visible') loadDay(DATA && DATA.date, { silent: true }); }, AUTO_REFRESH);
+setInterval(queueFlush, 30000);
+window.addEventListener('online', queueFlush);
+
+// ================== DEMO ==================
+function demoApi(p) {
+  return new Promise(res => setTimeout(() => {
+    if (p.action === 'day') {
+      const meals = {
+        98: { name: 'Plėšyta kiauliena "Dillcream"' }, 85: { name: 'Omletas su brokoliais' }, 914: { name: 'Krevetės „Hannibal“ padaže' },
+        59: { name: 'Vištiena "Carbonara" su ryžiais' }, 60: { name: 'Vištiena "Carbonara" su bolivine balanda' }, 92: { name: '"Brownie" su bananais' },
+        86: { name: 'Omletas su feta ir špinatais' }, 93: { name: 'Šokoladinis bananų pudingas' }, 72: { name: 'Lazanija su vištiena ir špinatais' },
+      };
+      const it = (id, q) => ({ mealId: id, name: meals[id].name, qty: q, img: '' });
+      res({ ok: true, date: p.date || '2026-11-27', updated: nowStr(), meals, orders: [
+        { id: 9001, first: 'Testas', last: 'Pirmasis', bundleName: '"Fitness" Rinkinys', variant: '2200 kcal', dishes: 7, status: 'paid', items: [it(98, 2), it(85, 1), it(914, 1), it(59, 3)] },
+        { id: 9002, first: 'Testė', last: 'Antroji', bundleName: '"Simple" Rinkinys', variant: '1800 kcal', dishes: 6, status: 'paid', items: [it(59, 1), it(60, 1), it(92, 2), it(86, 2)] },
+        { id: 9003, first: 'Jonas', last: 'Demo', bundleName: '"Premium" Rinkinys', variant: '2500 kcal', dishes: 5, status: 'paid', items: [it(98, 1), it(93, 2), it(72, 2)] },
+        { id: 9004, first: 'Ona', last: 'Supakuota', bundleName: '"Simple" Rinkinys', variant: '1800 kcal', dishes: 2, status: 'packed', packedBy: 'Demo', packedAt: '2026-11-26 08:15', items: [it(85, 2)] },
+      ] });
+    } else res({ ok: true, adminOk: true });
+  }, 300));
+}
+
+// ================== START ==================
+(function start() {
+  if (DEMO) toast('DEMO režimas: tikri lipdukai (98, 85, 914, 59…) veikia su bandomaisiais orderiais', 5000);
+  let cached = DEMO ? null : LS.get('pak_data', null);
+  if (cached && cached.date < nowStr().slice(0, 10)) cached = null;   // praėjusi diena – imame artimiausią naują
+  if (cached) { DATA = cached; $('date').value = DATA.date; render(); }
+  askWho(false);
+  loadDay(cached ? cached.date : '', { silent: !!cached });
+  if (LS.get('pak_cam', false)) camStart();
+  queueFlush();
+})();
+</script>
+</body>
+</html>
