@@ -227,9 +227,20 @@ async function api(params) {
   Object.entries(params).forEach(([k, v]) => { if (v != null && v !== '') u.searchParams.set(k, v); });
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 60000);
+  const base = String(LS.get('pak_api') || '');
+  if (/\/dev$/.test(base)) throw new Error('Nuorodoje testinis Apps Script adresas (/dev), jis telefone neveikia. Sheet meniu → Pakavimas → 4, įklijuokite Web app URL, kuris baigiasi /exec.');
+  let r;
   try {
-    const r = await fetch(u.toString(), { signal: ctl.signal });
-    const j = await r.json();
+    r = await fetch(u.toString(), { signal: ctl.signal });
+  } catch (e) {
+    clearTimeout(t);
+    if (!navigator.onLine) throw new Error('Nėra interneto ryšio');
+    throw new Error('Nepavyko pasiekti Apps Script. Patikrinkite: Deploy → Manage deployments → Who has access: „Anyone“ (ne „Anyone with Google account“), o nuorodos adresas baigiasi /exec.');
+  }
+  try {
+    const txt = await r.text();
+    let j;
+    try { j = JSON.parse(txt); } catch (e) { throw new Error('Apps Script grąžino ne duomenis, o puslapį (dažniausiai – prieiga ne „Anyone“ arba neperpaskelbta nauja versija).'); }
     if (!j.ok) throw new Error(j.error || 'Serverio klaida');
     return j;
   } finally { clearTimeout(t); }
@@ -244,7 +255,11 @@ async function loadDay(date, opts = {}) {
     $('date').value = DATA.date;
     render();
   } catch (e) {
-    if (!opts.silent) toast('✖ ' + e.message, 6000);
+    if (!opts.silent) {
+      toast('✖ ' + e.message, 8000);
+      setMsg('msgHome', 'err', '✖ ' + esc(e.message) +
+        `<div class="actions" style="margin-top:8px"><button class="btn light" onclick="askLink()">Įklijuoti naują nuorodą</button></div>`);
+    }
   } finally {
     hideLoading();
   }
