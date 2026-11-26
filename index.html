@@ -154,6 +154,7 @@
     </div>
     <input class="search" id="search" type="search" placeholder="Pavardė arba Bundle ID…" autocomplete="off">
     <div class="hint">Nuskenuokite lapo QR kodą, kad atidarytumėte orderį. Nuskenuotas patiekalas parodys, kam jo dar trūksta.</div>
+    <div id="demoBox" class="msg warn hidden"></div>
     <div id="msgHome"></div>
     <div id="olist"></div>
     <div class="hint" id="updated" style="margin-top:14px"></div>
@@ -755,9 +756,41 @@ function demoApi(p) {
   }, 300));
 }
 
+// ================== NUORODOS ĮVEDIMAS ==================
+function showDemoBox() {
+  let why;
+  if (qs.get('demo') === '1') why = 'adrese yra <b>?demo=1</b>';
+  else if (!LS.get('pak_api') && !LS.get('pak_key')) why = 'šiame įrenginyje (ar ikonėlėje) dar neįvesta nuoroda su raktu';
+  else if (!LS.get('pak_api')) why = 'nuorodoje trūksta <b>api=</b> dalies';
+  else why = 'nuorodoje trūksta <b>key=</b> dalies';
+  $('demoBox').innerHTML = `DEMO režimas: ${why}.<div class="actions" style="margin-top:8px"><button class="btn" id="bSetLink">Įklijuoti nuorodą iš Sheet</button></div>`;
+  $('demoBox').classList.remove('hidden');
+  $('bSetLink').onclick = askLink;
+}
+function askLink() {
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="box"><h3>Nuoroda iš Sheet</h3>
+    <p style="margin:0 0 8px;color:#555">Sheet meniu „Pakavimas → 2“ nukopijuokite <b>visą</b> nuorodą ir įklijuokite čia.</p>
+    <input type="text" id="linkIn" placeholder="https://…?api=…&key=…" autocomplete="off">
+    <div id="linkErr" style="color:#D92D20;margin-top:6px"></div>
+    <div class="actions"><button class="btn" id="linkOk">Išsaugoti</button><button class="btn light" id="linkNo">Atšaukti</button></div></div>`;
+  document.body.appendChild(m);
+  $('linkNo').onclick = () => m.remove();
+  $('linkOk').onclick = () => {
+    const s = $('linkIn').value.trim();
+    const g = n => { const x = new RegExp('[?&/]' + n + '=([^&#?\\s]+)').exec(s); return x ? decodeURIComponent(x[1]) : null; };
+    const a = g('api'), k = g('key');
+    if (!a || !/^https:\/\/script\.google(usercontent)?\.com\//.test(a)) { $('linkErr').textContent = 'Nuorodoje nerasta api=https://script.google.com/… dalis'; return; }
+    if (!k) { $('linkErr').textContent = 'Nuorodoje nerasta key= dalis'; return; }
+    LS.set('pak_api', a); LS.set('pak_key', k); LS.set('pak_data', null);
+    location.href = location.pathname;   // perkrauname be ?demo=1
+  };
+  setTimeout(() => $('linkIn').focus(), 50);
+}
+
 // ================== START ==================
 (function start() {
-  if (DEMO) toast('DEMO režimas: tikri lipdukai (98, 85, 914, 59…) veikia su bandomaisiais orderiais', 5000);
+  if (DEMO) { toast('DEMO režimas: tikri lipdukai (98, 85, 914, 59…) veikia su bandomaisiais orderiais', 5000); showDemoBox(); }
   let cached = DEMO ? null : LS.get('pak_data', null);
   if (cached && cached.date < nowStr().slice(0, 10)) cached = null;   // praėjusi diena – imame artimiausią naują
   if (cached) { DATA = cached; $('date').value = DATA.date; render(); }
